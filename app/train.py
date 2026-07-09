@@ -4,6 +4,9 @@ import time
 import os
 import mlflow
 import mlflow.sklearn
+# from mlflow.models import infer_signature
+# from mlflow.signature import infer_signature
+
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
@@ -12,6 +15,7 @@ from sklearn.pipeline import Pipeline
 # ------------------------------------------------------------------------------
 # HELPER FUNCTIONS
 # ------------------------------------------------------------------------------
+
 
 def load_data(url):
     """
@@ -25,6 +29,7 @@ def load_data(url):
         print(f"❌ Error loading data: {e}")
         raise
 
+
 def preprocess_data(df, test_size=0.2, random_state=42):
     """
     Split the dataframe into X (features) and y (target).
@@ -34,6 +39,7 @@ def preprocess_data(df, test_size=0.2, random_state=42):
     y = df.iloc[:, -1]
     return train_test_split(X, y, test_size=test_size, random_state=random_state)
 
+
 def create_pipeline():
     """
     Create a machine learning pipeline with StandardScaler and RandomForestRegressor.
@@ -42,6 +48,7 @@ def create_pipeline():
         ("standard_scaler", StandardScaler()),
         ("Random_Forest", RandomForestRegressor())
     ])
+
 
 def train_model(pipe, X_train, y_train, param_grid, cv=2):
     """
@@ -53,9 +60,11 @@ def train_model(pipe, X_train, y_train, param_grid, cv=2):
     model.fit(X_train, y_train)
     return model
 
+
 # ------------------------------------------------------------------------------
 # MAIN EXECUTION
 # ------------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     # 1. Parse ONLY Model Hyperparameters
@@ -79,7 +88,12 @@ if __name__ == "__main__":
         "Random_Forest__n_estimators": [args.n_estimators],
         "Random_Forest__criterion": [args.criterion]
     }
-
+    
+    registered_model_name ="california_housing"
+    alias_name = "challenger"
+        
+    client = mlflow.tracking.MlflowClient()
+    
     # 4. Start Run
     with mlflow.start_run():
         start_time = time.time()
@@ -110,7 +124,31 @@ if __name__ == "__main__":
         mlflow.sklearn.log_model(
             sk_model=model.best_estimator_,
             artifact_path="model",
-            registered_model_name="random_forest_regressor"
+            registered_model_name=registered_model_name
         )
         
         print("✅ Training Complete.")
+        
+        # A rajouter à la fin du train pour écrire un alias au modele : 
+        # Log model seperately to have more flexibility on setup
+        predictions = model.predict(X_train)
+        # signature = infer_signature(X_train, predictions)
+        signature = mlflow.signature.infer_signature(X_train, predictions)
+        input_example = X_train.head(5)
+        
+        model_info = mlflow.sklearn.log_model(
+            sk_model=model,
+            name="model",
+            registered_model_name=registered_model_name,
+            signature=signature,
+            input_example=input_example,
+        )
+        
+        model_version = model_info.registered_model_version
+        print(f"[INFO] Model logged as version {model_version}")
+        
+        client.set_registered_model_alias(
+            name=registered_model_name,
+            alias=alias_name,
+            version=model_version,
+        )
