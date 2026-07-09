@@ -75,3 +75,4 @@ jobs:
         run: |
           # Run the python script, passing the commit hash as an argument
           python scripts/trigger_airflow.py ${{ github.sha }}
+  
