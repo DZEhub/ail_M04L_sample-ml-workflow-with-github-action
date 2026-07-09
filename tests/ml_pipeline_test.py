@@ -10,6 +10,7 @@ from app.train import load_data, preprocess_data, create_pipeline, train_model
 # 1. FIXTURES (Reusable Dummy Data)
 # ==========================================
 
+
 @pytest.fixture
 def mock_df():
     """
@@ -34,6 +35,7 @@ def mock_df():
 # 2. UNIT TESTS
 # ==========================================
 
+
 def test_load_data(mock_df):
     """
     Test loading data. We patch 'pd.read_csv' so it returns our 
@@ -49,6 +51,7 @@ def test_load_data(mock_df):
         assert df.shape == (10, 9) # 9 columns (8 features + 1 target)
         mock_read_csv.assert_called_once()
 
+
 def test_preprocess_data(mock_df):
     """
     Test that data splits correctly into 80/20 train/test.
@@ -62,6 +65,7 @@ def test_preprocess_data(mock_df):
     # Check that Target column is removed from Features (X)
     assert 'MedHouseVal' not in X_train.columns
     assert 'MedHouseVal' not in X_test.columns
+
 
 def test_create_pipeline():
     """
@@ -78,6 +82,7 @@ def test_create_pipeline():
     
     # Check step types (Robustness check)
     assert isinstance(pipe.named_steps['Random_Forest'], RandomForestRegressor)
+
 
 def test_train_model_smoke_test(mock_df):
     """
